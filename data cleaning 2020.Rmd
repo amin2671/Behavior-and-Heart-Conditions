@@ -1,0 +1,99 @@
+---
+title: "project"
+author: "Andrew Min"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, include=FALSE, message=FALSE, warning=FALSE)
+
+library(caret)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(splitstackshape)
+library(pROC)
+library(boot)
+library(corrplot)
+library(car)
+library(e1071)
+library(mice)
+library(VIM)
+
+# https://www.cdc.gov/brfss/annual_data/annual_2021.html
+```
+
+```{r read file}
+brfss2020 <- read.csv("LLCP2020.csv")
+```
+
+```{r eda}
+brfss <- subset(brfss2020, select=c("X_MICHD","CVDSTRK3","CHCCOPD2","ADDEPEV3","CHCKDNY2","DIABETE4","VETERAN3","WEIGHT2","X_RFDRHV7","X_TOTINDA","X_ASTHMS1","X_DRDXAR2","X_SEX","X_AGE80","X_BMI5","X_SMOKER3"))
+# Does not include high blood pressure, high cholesterol, eats fruits, and eats vegetables
+```
+
+```{r cleaning colnames}
+edited_names <- c("heart_disease","stroke","lung_disease","depression","kidney_disease","diabetes","veteran","weight","heavy_drinker","physical_activity","asthma","arthritis","gender","age","BMI","smoker")
+colnames(brfss) <- edited_names
+```
+
+```{r data cleaning}
+brfss_cleaned <- brfss %>%
+  filter(!is.na(heart_disease) &
+           !is.na(stroke) &
+           stroke != 9 &
+           !is.na(lung_disease) &
+           lung_disease != 9 &
+           !is.na(depression) &
+           depression != 9 &
+           !is.na(kidney_disease) &
+           kidney_disease != 9 &
+           !is.na(diabetes) &
+           diabetes != 9 &
+           !is.na(veteran)) %>%
+  mutate(diabetes=ifelse(diabetes==1|diabetes==2|diabetes==4, 1, 2),
+         weight=ifelse(weight>9000 & weight!=9999, 
+                       ifelse(ceiling((weight-9000)*2.20462262185) > floor((weight-9000)*2.20462262185),
+                              ceiling((weight-9000)*2.20462262185), 
+                              floor((weight-9000)*2.20462262185)), 
+                       weight),
+         weight=ifelse(weight==9999 | weight==7777, NA, weight),
+         stroke=ifelse(stroke==7, 2, stroke),
+         lung_disease=ifelse(lung_disease==7,2,lung_disease),
+         depression=ifelse(depression==7,2,depression),
+         kidney_disease=ifelse(kidney_disease==7,2,kidney_disease),
+         veteran=ifelse(veteran==7 | veteran==9,2,veteran),
+         heavy_drinker=ifelse(heavy_drinker==9,2,heavy_drinker),
+         physical_activity=ifelse(physical_activity==9,2,physical_activity),
+         asthma=ifelse(asthma==9,3,asthma),
+         arthritis=ifelse(is.na(arthritis),2,arthritis),
+         smoker=ifelse(smoker==9,4,smoker),
+         BMI=BMI/100)
+```
+
+```{r missing values}
+imp.brfss <- mice(brfss_cleaned, printFlag=FALSE)
+brfss_done <- complete(imp.brfss)
+```
+
+```{r factors}
+brfss_done$heart_disease <- factor(brfss_done$heart_disease, labels=c("yes","no"))
+brfss_done$stroke <- factor(brfss_done$stroke, labels=c("yes","no"))
+brfss_done$lung_disease <- factor(brfss_done$lung_disease, labels=c("yes","no"))
+brfss_done$depression <- factor(brfss_done$depression, labels=c("yes","no"))
+brfss_done$kidney_disease <- factor(brfss_done$kidney_disease, labels=c("yes","no"))
+brfss_done$diabetes <- factor(brfss_done$diabetes, labels=c("yes","no"))
+brfss_done$veteran <- factor(brfss_done$veteran, labels=c("yes","no"))
+brfss_done$heavy_drinker <- factor(brfss_done$heavy_drinker, labels=c("no","yes"))
+brfss_done$physical_activity <- factor(brfss_done$physical_activity, labels=c("yes","no"))
+brfss_done$asthma <- factor(brfss_done$asthma, labels=c("current","former","never"))
+brfss_done$arthritis <- factor(brfss_done$arthritis, labels=c("yes","no"))
+brfss_done$gender <- factor(brfss_done$gender, labels=c("male","female"))
+brfss_done$smoker <- factor(brfss_done$smoker, labels=c("current - everyday","current - sometimes","former","never"))
+```
+
+```{r export}
+write.csv(brfss_done, "brfss2020.csv", row.names=FALSE)
+#brfss <- read.csv("brfss.csv")
+```
