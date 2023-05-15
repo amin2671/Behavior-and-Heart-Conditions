@@ -1,0 +1,378 @@
+---
+title: "Project"
+author: "Andrew Min"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, include=FALSE, message=FALSE, warning=FALSE)
+
+library(caret)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(splitstackshape)
+library(pROC)
+library(corrplot)
+library(car)
+library(e1071)
+library(factoextra)
+library(cluster)
+
+
+# correlation checks with corrplot
+# interaction terms
+# use ANOVA or chi-sq tests to check for significance
+# 
+```
+
+
+```{r load data}
+brfss2020 <- read.csv("brfss2020.csv")
+brfss2021 <- read.csv("brfss2021.csv")
+```
+
+```{r }
+brfss2021$heart_disease <- as.factor(brfss2021$heart_disease)
+brfss2021$stroke <- as.factor(brfss2021$stroke)
+brfss2021$lung_disease <- as.factor(brfss2021$lung_disease)
+brfss2021$depression <- as.factor(brfss2021$depression)
+brfss2021$kidney_disease <- as.factor(brfss2021$kidney_disease)
+brfss2021$diabetes <- as.factor(brfss2021$diabetes)
+brfss2021$veteran <- as.factor(brfss2021$veteran)
+brfss2021$heavy_drinker <- as.factor(brfss2021$heavy_drinker)
+brfss2021$physical_activity <- as.factor(brfss2021$physical_activity)
+brfss2021$high_bp <- as.factor(brfss2021$high_bp)
+brfss2021$high_cholesterol <- as.factor(brfss2021$high_cholesterol)
+brfss2021$asthma <- as.factor(brfss2021$asthma)
+brfss2021$arthritis <- as.factor(brfss2021$arthritis)
+brfss2021$gender <- as.factor(brfss2021$gender)
+brfss2021$smoker <- as.factor(brfss2021$smoker)
+brfss2021$eat_fruits <- as.factor(brfss2021$eat_fruits)
+brfss2021$eat_veggies <- as.factor(brfss2021$eat_veggies)
+```
+
+```{r }
+brfss2020$heart_disease <- as.factor(brfss2020$heart_disease)
+brfss2020$stroke <- as.factor(brfss2020$stroke)
+brfss2020$lung_disease <- as.factor(brfss2020$lung_disease)
+brfss2020$depression <- as.factor(brfss2020$depression)
+brfss2020$kidney_disease <- as.factor(brfss2020$kidney_disease)
+brfss2020$diabetes <- as.factor(brfss2020$diabetes)
+brfss2020$veteran <- as.factor(brfss2020$veteran)
+brfss2020$heavy_drinker <- as.factor(brfss2020$heavy_drinker)
+brfss2020$physical_activity <- as.factor(brfss2020$physical_activity)
+brfss2020$asthma <- as.factor(brfss2020$asthma)
+brfss2020$arthritis <- as.factor(brfss2020$arthritis)
+brfss2020$gender <- as.factor(brfss2020$gender)
+brfss2020$smoker <- as.factor(brfss2020$smoker)
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=heart_disease, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title="Barchart of heart_disease")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=stroke, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of stroke")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=lung_disease, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of lung_disease")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=depression, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of depression")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=kidney_disease, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of kidney_disease")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=diabetes, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of diabetes")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=veteran, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of veteran")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=weight, fill=heart_disease)) + 
+  geom_density() +
+  labs(title = "Density plot of weight") +
+  scale_fill_manual(values = alpha(c("red", "blue"), .2))
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=heavy_drinker, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of heavy_drinker")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=physical_activity, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of physical_activity")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=high_bp, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of high_bp")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=high_cholesterol, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of high_cholesterol")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=asthma, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of asthma")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=arthritis, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of arthritis")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=gender, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of gender")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=age, fill=heart_disease)) + 
+  geom_density() +
+  labs(title = "Density plot of age") +
+  scale_fill_manual(values = alpha(c("red", "blue"), .2))
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=BMI, fill=heart_disease)) + 
+  geom_density() +
+  labs(title = "Density plot of BMI") +
+  scale_fill_manual(values = alpha(c("red", "blue"), .2))
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=smoker, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of smoker")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=eat_fruits, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of eat_fruits")
+```
+
+```{r }
+brfss2021 %>%
+  ggplot(aes(x=eat_veggies, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of eat_veggies")
+```
+
+```{r }
+temp.brfss <- subset(brfss2021, select=-c(heart_disease,weight,age,BMI))
+
+sig.brfss <- corr.brfss <- matrix(ncol=16,nrow=16)
+brfss.names <- c("stroke","lung_disease","depression","kidney_disease","diabetes","veteran","heavy_drinker","physical_activity","high_bp","high_cholesterol","asthma","arthritis","gender","smoker","eat_fruits","eat_veggies")
+rownames(corr.brfss) <- colnames(corr.brfss) <- rownames(sig.brfss) <- colnames(sig.brfss) <- brfss.names
+
+for(i in 1:ncol(temp.brfss)) {
+  for(j in 1:ncol(temp.brfss)) {
+    if(i==j) {
+      sig.brfss[i,j] = 1
+      corr.brfss[i,j] = 1
+      next
+    }
+    test.chisq = chisq.test(temp.brfss[,i],temp.brfss[,j])
+    sig.brfss[i,j] = test.chisq$p.value
+    corr.brfss[i,j] = sqrt(test.chisq$statistic / 431790)
+  }
+}
+
+corrplot(corr.brfss, is.corr = FALSE)
+corrplot(cor(subset(brfss2021, select=c(weight,age,BMI))),
+         method='number')
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=heart_disease, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title="Barchart of heart_disease")
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=stroke, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of stroke")
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=lung_disease, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of lung_disease")
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=depression, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of depression")
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=kidney_disease, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of kidney_disease")
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=diabetes, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of diabetes")
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=veteran, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of veteran")
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=weight, fill=heart_disease)) + 
+  geom_density() +
+  labs(title = "Density plot of weight") +
+  scale_fill_manual(values = alpha(c("red", "blue"), .2))
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=heavy_drinker, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of heavy_drinker")
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=physical_activity, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of physical_activity")
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=asthma, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of asthma")
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=arthritis, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of arthritis")
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=gender, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of gender")
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=age, fill=heart_disease)) + 
+  geom_density() +
+  labs(title = "Density plot of age") +
+  scale_fill_manual(values = alpha(c("red", "blue"), .2))
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=BMI, fill=heart_disease)) + 
+  geom_density() +
+  labs(title = "Density plot of BMI") +
+  scale_fill_manual(values = alpha(c("red", "blue"), .2))
+```
+
+```{r }
+brfss2020 %>%
+  ggplot(aes(x=smoker, fill=heart_disease)) + 
+  geom_bar() +
+  labs(title = "Barchart of smoker")
+```
+
+```{r }
+temp.brfss <- subset(brfss2020, select=-c(heart_disease,weight,age,BMI))
+
+sig.brfss <- corr.brfss <- matrix(ncol=12,nrow=12)
+brfss.names <- c("stroke","lung_disease","depression","kidney_disease","diabetes","veteran","heavy_drinker","physical_activity","asthma","arthritis","gender","smoker")
+rownames(corr.brfss) <- colnames(corr.brfss) <- rownames(sig.brfss) <- colnames(sig.brfss) <- brfss.names
+
+for(i in 1:ncol(temp.brfss)) {
+  for(j in 1:ncol(temp.brfss)) {
+    if(i==j) {
+      sig.brfss[i,j] = 1
+      corr.brfss[i,j] = 1
+      next
+    }
+    test.chisq = chisq.test(temp.brfss[,i],temp.brfss[,j])
+    sig.brfss[i,j] = test.chisq$p.value
+    corr.brfss[i,j] = sqrt(test.chisq$statistic / 431790)
+  }
+}
+
+corrplot(corr.brfss, is.corr = FALSE)
+corrplot(cor(subset(brfss2020, select=c(weight,age,BMI))),
+         method='number')
+```

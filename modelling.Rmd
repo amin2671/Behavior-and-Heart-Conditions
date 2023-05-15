@@ -1,0 +1,262 @@
+---
+title: "Project"
+author: "Andrew Min"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, include=FALSE, message=FALSE, warning=FALSE)
+
+library(caret)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(splitstackshape)
+library(pROC)
+library(corrplot)
+library(car)
+library(e1071)
+library(randomForestSRC)
+
+```
+
+
+```{r load data}
+brfss2020 <- read.csv("brfss2020.csv")
+brfss2021 <- read.csv("brfss2021.csv")
+```
+
+```{r }
+brfss2021$heart_disease <- as.factor(brfss2021$heart_disease)
+brfss2021$stroke <- as.factor(brfss2021$stroke)
+brfss2021$lung_disease <- as.factor(brfss2021$lung_disease)
+brfss2021$depression <- as.factor(brfss2021$depression)
+brfss2021$kidney_disease <- as.factor(brfss2021$kidney_disease)
+brfss2021$diabetes <- as.factor(brfss2021$diabetes)
+brfss2021$veteran <- as.factor(brfss2021$veteran)
+brfss2021$heavy_drinker <- as.factor(brfss2021$heavy_drinker)
+brfss2021$physical_activity <- as.factor(brfss2021$physical_activity)
+brfss2021$high_bp <- as.factor(brfss2021$high_bp)
+brfss2021$high_cholesterol <- as.factor(brfss2021$high_cholesterol)
+brfss2021$asthma <- as.factor(brfss2021$asthma)
+brfss2021$arthritis <- as.factor(brfss2021$arthritis)
+brfss2021$gender <- as.factor(brfss2021$gender)
+brfss2021$smoker <- as.factor(brfss2021$smoker)
+brfss2021$eat_fruits <- as.factor(brfss2021$eat_fruits)
+brfss2021$eat_veggies <- as.factor(brfss2021$eat_veggies)
+
+brfss2020$heart_disease <- as.factor(brfss2020$heart_disease)
+brfss2020$stroke <- as.factor(brfss2020$stroke)
+brfss2020$lung_disease <- as.factor(brfss2020$lung_disease)
+brfss2020$depression <- as.factor(brfss2020$depression)
+brfss2020$kidney_disease <- as.factor(brfss2020$kidney_disease)
+brfss2020$diabetes <- as.factor(brfss2020$diabetes)
+brfss2020$veteran <- as.factor(brfss2020$veteran)
+brfss2020$heavy_drinker <- as.factor(brfss2020$heavy_drinker)
+brfss2020$physical_activity <- as.factor(brfss2020$physical_activity)
+brfss2020$asthma <- as.factor(brfss2020$asthma)
+brfss2020$arthritis <- as.factor(brfss2020$arthritis)
+brfss2020$gender <- as.factor(brfss2020$gender)
+brfss2020$smoker <- as.factor(brfss2020$smoker)
+```
+
+```{r }
+split2021 <- stratified(brfss2021, group=c("heart_disease"), size=.7, bothSets = TRUE)
+split2020 <- stratified(brfss2020, group=c("heart_disease"), size=.7, bothSets = TRUE)
+```
+
+```{r }
+set.seed(56)
+glm2021 <- glm(heart_disease ~ stroke+
+                 lung_disease+
+                 depression+
+                 kidney_disease+
+                 diabetes+
+                 veteran+
+                 heavy_drinker+
+                 physical_activity+
+                 high_bp+
+                 high_cholesterol+
+                 asthma+
+                 arthritis+
+                 gender+
+                 age+
+                 BMI+
+                 smoker+
+                 eat_fruits+
+                 eat_veggies, 
+               data=split2021$SAMP1, 
+               family=binomial)
+summary(glm2021)
+```
+
+```{r }
+set.seed(56)
+rf2021 <- rfsrc(heart_disease ~ stroke+
+                  lung_disease+
+                  depression+
+                  kidney_disease+
+                  diabetes+
+                  veteran+
+                  heavy_drinker+
+                  physical_activity+
+                  high_bp+
+                  high_cholesterol+
+                  asthma+
+                  arthritis+
+                  gender+
+                  age+
+                  smoker+
+                  eat_veggies, 
+                data=split2021$SAMP1,
+                ntree=101,
+                nodesize=1,
+                importance=TRUE)
+```
+
+```{r }
+rf2021$importance
+
+data.frame(rf2021$importance) %>%
+  tibble::rownames_to_column(var = "var") %>%
+  ggplot(aes(x = reorder(var,all), y = all)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  labs(x = "Variables", y = "Variable Importance")
+
+data.frame(rf2021$importance) %>%
+  tibble::rownames_to_column(var = "var") %>%
+  ggplot(aes(x = reorder(var,no), y = no)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  labs(title="Variable Importance for those without Heart Disease", x = "Variables", y = "Variable Importance")
+
+data.frame(rf2021$importance) %>%
+  tibble::rownames_to_column(var = "var") %>%
+  ggplot(aes(x = reorder(var,yes), y = yes)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  labs(title="Variable Importance for those with Heart Disease", x = "Variables", y = "Variable Importance")
+```
+
+```{r }
+set.seed(56)
+glm2021 <- glm(heart_disease ~ stroke+
+                 lung_disease+
+                 depression+
+                 kidney_disease+
+                 diabetes+
+                 veteran+
+                 heavy_drinker+
+                 physical_activity+
+                 high_bp+
+                 high_cholesterol+
+                 asthma+
+                 arthritis+
+                 gender+
+                 age+
+                 smoker+
+                 eat_veggies, 
+               data=split2021$SAMP1, 
+               family=binomial)
+summary(glm2021)
+```
+
+```{r }
+set.seed(56)
+glm2020 <- glm(heart_disease ~ stroke+
+                 lung_disease+
+                 depression+
+                 kidney_disease+
+                 diabetes+
+                 veteran+
+                 weight+
+                 heavy_drinker+
+                 physical_activity+
+                 asthma+
+                 arthritis+
+                 gender+
+                 age+
+                 smoker, 
+               data=split2020$SAMP1, 
+               family=binomial)
+summary(glm2020)
+
+rf2020 <- rfsrc(heart_disease ~ stroke+
+                  lung_disease+
+                  depression+
+                  kidney_disease+
+                  diabetes+
+                  veteran+
+                  heavy_drinker+
+                  physical_activity+
+                  asthma+
+                  arthritis+
+                  gender+
+                  age+
+                  smoker, 
+                data=split2020$SAMP1,
+                ntree=101,
+                nodesize=1,
+                importance=TRUE,
+                do.trace=TRUE)
+```
+
+```{r }
+rf2020$importance
+
+data.frame(rf2020$importance) %>%
+  tibble::rownames_to_column(var = "var") %>%
+  ggplot(aes(x = reorder(var,all), y = all)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  labs(x = "Variables", y = "Variable Importance")
+
+data.frame(rf2020$importance) %>%
+  tibble::rownames_to_column(var = "var") %>%
+  ggplot(aes(x = reorder(var,no), y = no)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  labs(title="Variable Importance for those without Heart Disease", x = "Variables", y = "Variable Importance")
+
+data.frame(rf2020$importance) %>%
+  tibble::rownames_to_column(var = "var") %>%
+  ggplot(aes(x = reorder(var,yes), y = yes)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  labs(title="Variable Importance for those with Heart Disease", x = "Variables", y = "Variable Importance")
+```
+
+```{r }
+# PREDICTIONS
+pred.rf2021 <- predict.rfsrc(rf2021, subset(split2021$SAMP2, select=-c(heart_disease)))
+pred.glm2021<- predict(glm2021, subset(split2021$SAMP2, select=-c(heart_disease)))
+
+pred.rf2020 <- predict.rfsrc(rf2020, subset(split2020$SAMP2, select=-c(heart_disease)))
+pred.glm2020<- predict(glm2020, subset(split2020$SAMP2, select=-c(heart_disease)))
+
+pred2021 <- data.frame(predict_log2021= factor(ifelse(pred.glm2021 >= 0.5,1,0), 
+                                                       levels = c(0,1), 
+                                                       labels=c("no","yes")),
+                          pred_rf2021    = factor(ifelse(pred.rf2021$predicted[,2] > pred.rf2021$predicted[,1],1,0), 
+                                                       levels = c(0,1), 
+                                                       labels=c("no","yes")),
+                          actual         = split2021$SAMP2$heart_disease)
+
+pred2020 <- data.frame(predict_log2020   = factor(ifelse(pred.glm2020 >= 0.5,1,0), 
+                                                       levels = c(0,1), 
+                                                       labels=c("no","yes")),
+                          predict_rf2020 = factor(ifelse(pred.rf2020$predicted[,2] > pred.rf2020$predicted[,1],1,0),
+                                                       levels = c(0,1), 
+                                                       labels=c("no","yes")),
+                          actual         = split2020$SAMP2$heart_disease)
+```
+
+```{r }
+confusionMatrix(pred2021$actual, pred2021$predict_log2021)
+confusionMatrix(pred2021$actual, pred2021$pred_rf2021)
+
+confusionMatrix(pred2020$actual, pred2020$predict_log2020)
+confusionMatrix(pred2020$actual, pred2020$predict_rf2020)
+```
